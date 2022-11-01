@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"flag"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -18,7 +18,6 @@ import (
 	"github.com/alexedwards/scs/v2"
 
 	"github.com/jackc/pgx/v4/pgxpool"
-	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type application struct {
@@ -31,40 +30,31 @@ type application struct {
 	sessionManager *scs.SessionManager
 }
 
-func openDB(url string) (*sql.DB, error) {
-	db, err := sql.Open("pgx", url)
+func openDB(dbUrl string) (*pgxpool.Pool, error) {
+	dbPool, err := pgxpool.Connect(context.Background(), dbUrl)
 	if err != nil {
-		return nil, err
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
 	}
 
-	err = db.Ping()
-	if err != nil {
-		return nil, err
-	}
-
-	return db, nil
+	return dbPool, nil
 }
 
 func main() {
 	addr := flag.String("addr", ":4000", "HTTP network address")
-	dsn := flag.String("url", "postgres://snippetbox@localhost:5432/snippetbox", "MySQL data source name")
+	dbUrl := flag.String("url", "postgres://codebox@localhost:5432/codebox", "MySQL data source name")
 
-	pool, err := pgxpool.Connect(context.Background(), *dsn)
+	dbPool, err := openDB(*dbUrl)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
 	}
-	defer pool.Close()
+	defer dbPool.Close()
 
 	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
-
-	db, err := openDB(*dsn)
-	if err != nil {
-		errorLog.Fatal(err)
-	}
-	defer db.Close()
 
 	templateCache, err := newTemplateCache()
 	if err != nil {
@@ -74,14 +64,14 @@ func main() {
 	formDecoder := form.NewDecoder()
 
 	sessionManager := scs.New()
-	sessionManager.Store = pgxstore.New(pool)
+	sessionManager.Store = pgxstore.New(dbPool)
 	sessionManager.Lifetime = 12 * time.Hour
 
 	app := &application{
 		errorLog:       errorLog,
 		infoLog:        infoLog,
-		snippets:       &models.SnippetModel{DB: db},
-		users:          &models.UserModel{DB: db},
+		snippets:       &models.SnippetModel{DB: dbPool},
+		users:          &models.UserModel{DB: dbPool},
 		templateCache:  templateCache,
 		formDecoder:    formDecoder,
 		sessionManager: sessionManager,

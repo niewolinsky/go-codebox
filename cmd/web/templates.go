@@ -31,10 +31,10 @@ var functions = template.FuncMap{
 func newTemplateCache() (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
 	// Use fs.Glob() to get a slice of all filepaths in the ui.Files embedded
-	// filesystem which match the pattern 'html/pages/*.tmpl'. This essentially
+	// filesystem which match the pattern 'html/pages/*.html'. This essentially
 	// gives us a slice of all the 'page' templates for the application, just
 	// like before.
-	pages, err := fs.Glob(ui.Files, "html/pages/*.tmpl")
+	pages, err := fs.Glob(ui.Files, "html/pages/*.html")
 	if err != nil {
 		return nil, err
 	}
@@ -43,8 +43,8 @@ func newTemplateCache() (map[string]*template.Template, error) {
 		// Create a slice containing the filepath patterns for the templates we
 		// want to parse.
 		patterns := []string{
-			"html/base.tmpl",
-			"html/partials/*.tmpl",
+			"html/base.html",
+			"html/partials/*.html",
 			page,
 		}
 		// Use ParseFS() instead of ParseFiles() to parse the template files

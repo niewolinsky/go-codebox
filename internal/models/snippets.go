@@ -1,43 +1,47 @@
 package models
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"time"
+
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type Snippet struct {
-	ID      int
-	Title   string
-	Content string
-	Created time.Time
-	Expires time.Time
+	SnippetID int
+	UserID    int
+	Title     string
+	Content   string
+	Created   time.Time
+	Expires   time.Time
+	Public    bool
 }
 
 type SnippetModel struct {
-	DB *sql.DB
+	DB *pgxpool.Pool
 }
 
-func (m *SnippetModel) Insert(title string, content string) (int, error) {
-	stmt := `INSERT INTO snippets (title, content, created, expires) VALUES ($1::varchar, $2::varchar, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id`
-	var id int
+func (m *SnippetModel) Insert(title string, content string, public bool) (int, error) {
+	stmt := `INSERT INTO snippets (user_id, title, content, created, expires, public) VALUES (1, $1::varchar, $2::varchar, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '3 day', $3) RETURNING snippet_id`
+	var snippet_id int
 
-	err := m.DB.QueryRow(stmt, title, content).Scan(&id)
+	err := m.DB.QueryRow(context.Background(), stmt, title, content, public).Scan(&snippet_id)
 	if err != nil {
 		return -1, err
 	}
 
-	return int(id), nil
+	return int(snippet_id), nil
 }
 
 func (m *SnippetModel) Get(id int) (*Snippet, error) {
-	stmt := `SELECT id, title, content, created, expires FROM snippets
-	WHERE id = $1`
+	stmt := `SELECT snippet_id, user_id, title, content, created, expires, public FROM snippets WHERE snippet_id = $1`
 
-	row := m.DB.QueryRow(stmt, id)
+	row := m.DB.QueryRow(context.Background(), stmt, id)
 
 	s := &Snippet{}
-	err := row.Scan(&s.ID, &s.Title, &s.Content, &s.Created, &s.Expires)
+	err := row.Scan(&s.SnippetID, &s.UserID, &s.Title, &s.Content, &s.Created, &s.Expires, &s.Public)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNoRecord
@@ -49,9 +53,9 @@ func (m *SnippetModel) Get(id int) (*Snippet, error) {
 }
 
 func (m *SnippetModel) Latest() ([]*Snippet, error) {
-	stmt := `SELECT id, title, content, created, expires FROM snippets LIMIT 5`
+	stmt := `SELECT snippet_id, user_id, title, content, created, expires, public FROM snippets WHERE public = true LIMIT 5`
 
-	rows, err := m.DB.Query(stmt)
+	rows, err := m.DB.Query(context.Background(), stmt)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +65,7 @@ func (m *SnippetModel) Latest() ([]*Snippet, error) {
 	for rows.Next() {
 		s := &Snippet{}
 
-		err = rows.Scan(&s.ID, &s.Title, &s.Content, &s.Created, &s.Expires)
+		err = rows.Scan(&s.SnippetID, &s.UserID, &s.Title, &s.Content, &s.Created, &s.Expires, &s.Public)
 		if err != nil {
 			return nil, err
 		}

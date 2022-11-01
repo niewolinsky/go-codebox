@@ -1,0 +1,23 @@
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    hashed_password CHAR(60) NOT NULL,
+    created TIMESTAMP NOT NULL
+);
+
+CREATE TABLE snippets (
+    snippet_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id),
+    title VARCHAR(100) NOT NULL,
+    content TEXT NOT NULL,
+    created TIMESTAMP NOT NULL,
+    expires TIMESTAMP NOT NULL,
+    public BOOLEAN NOT NULL
+);
+
+CREATE TABLE sessions (
+    token CHAR(43) PRIMARY KEY,
+    data BYTEA NOT NULL,
+    expiry TIMESTAMP(6) NOT NULL
+);

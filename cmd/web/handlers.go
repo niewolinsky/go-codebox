@@ -16,6 +16,7 @@ type snippetCreateForm struct {
 	Title               string `form:"title"`
 	Content             string `form:"content"`
 	Expires             int    `form:"expires"`
+	Public              bool   `form:"public"`
 	validator.Validator `form:"-"`
 }
 
@@ -42,7 +43,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 	data.Snippets = snippets
 
-	app.render(w, http.StatusOK, "home.tmpl", data)
+	app.render(w, http.StatusOK, "home.html", data)
 }
 
 func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +68,7 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 	data.Snippet = snippet
 
-	app.render(w, http.StatusOK, "view.tmpl", data)
+	app.render(w, http.StatusOK, "view.html", data)
 }
 
 func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +76,7 @@ func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 
 	data.Form = snippetCreateForm{}
 
-	app.render(w, http.StatusOK, "create.tmpl", data)
+	app.render(w, http.StatusOK, "create.html", data)
 }
 
 func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
@@ -95,11 +96,11 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 	if !form.Valid() {
 		data := app.newTemplateData(r)
 		data.Form = form
-		app.render(w, http.StatusUnprocessableEntity, "create.tmpl", data)
+		app.render(w, http.StatusUnprocessableEntity, "create.html", data)
 		return
 	}
 
-	id, err := app.snippets.Insert(form.Title, form.Content)
+	id, err := app.snippets.Insert(form.Title, form.Content, form.Public)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -113,7 +114,7 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 	data.Form = userSignupForm{}
-	app.render(w, http.StatusOK, "signup.tmpl", data)
+	app.render(w, http.StatusOK, "signup.html", data)
 }
 
 func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +135,7 @@ func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
 	if !form.Valid() {
 		data := app.newTemplateData(r)
 		data.Form = form
-		app.render(w, http.StatusUnprocessableEntity, "signup.tmpl", data)
+		app.render(w, http.StatusUnprocessableEntity, "signup.html", data)
 		return
 	}
 
@@ -155,7 +156,7 @@ func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
 func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 	data.Form = userLoginForm{}
-	app.render(w, http.StatusOK, "login.tmpl", data)
+	app.render(w, http.StatusOK, "login.html", data)
 }
 
 func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
@@ -174,7 +175,7 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 	if !form.Valid() {
 		data := app.newTemplateData(r)
 		data.Form = form
-		app.render(w, http.StatusUnprocessableEntity, "login.tmpl", data)
+		app.render(w, http.StatusUnprocessableEntity, "login.html", data)
 		return
 	}
 	// Check whether the credentials are valid. If they're not, add a generic
@@ -185,7 +186,7 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 			form.AddNonFieldError("Email or password is incorrect")
 			data := app.newTemplateData(r)
 			data.Form = form
-			app.render(w, http.StatusUnprocessableEntity, "login.tmpl", data)
+			app.render(w, http.StatusUnprocessableEntity, "login.html", data)
 		} else {
 			app.serverError(w, err)
 		}
