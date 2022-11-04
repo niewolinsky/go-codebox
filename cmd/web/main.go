@@ -42,7 +42,7 @@ func openDB(dbUrl string) (*pgxpool.Pool, error) {
 
 func main() {
 	addr := flag.String("addr", ":4000", "HTTP network address")
-	dbUrl := flag.String("url", "postgres://codebox@localhost:5432/codebox", "MySQL data source name")
+	dbUrl := flag.String("url", "postgres://codebox@localhost:5432/codebox", "PostgreSQL data source name")
 
 	dbPool, err := openDB(*dbUrl)
 	if err != nil {
