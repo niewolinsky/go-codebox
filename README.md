@@ -1,6 +1,8 @@
 # Codebox - Go Snippets Sharing App
 Framework-less server side CRUD application using built-in Go's `html/template` engine, allowing you to share snippets of code (akin to pastebin.com). 
 
+![Screenshot Of Application](https://i.imgur.com/N8fUODM.png)
+
 ## Features:
 - Creating a shareable code snippet with automatic expiration period
 - Sharing a snippet to either (personal) private or public repository
